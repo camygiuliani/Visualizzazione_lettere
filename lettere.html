@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lettere su traiettoria fissa (UI friendly)</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --panel: rgba(255,255,255,0.06);
+      --panel2: rgba(255,255,255,0.04);
+      --stroke: rgba(255,255,255,0.12);
+      --text: #e8eef6;
+      --muted: rgba(232,238,246,0.70);
+      --muted2: rgba(232,238,246,0.55);
+      --accent: rgba(120,200,255,0.85);
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+
+    .layout{
+      height: 100%;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .panel{
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 280px;
+    }
+
+    .appTitle{
+      display:flex; align-items:center; justify-content:space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .appTitle h1{
+      margin:0; font-size: 16px; letter-spacing: 0.2px;
+    }
+    .badge{
+      font-size: 12px; color: rgba(255,255,255,0.75);
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      padding: 6px 10px;
+      border-radius: 999px;
+      user-select:none;
+    }
+
+    .card{
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .help{
+      display:flex; gap:10px; align-items:flex-start;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.3;
+    }
+    .help .dot{
+      width: 10px; height: 10px; border-radius: 999px;
+      margin-top: 3px;
+      background: var(--accent);
+      box-shadow: 0 0 18px rgba(120,200,255,0.35);
+      flex: 0 0 auto;
+    }
+
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
+    .input{
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      padding: 12px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+    .input:focus{
+      border-color: rgba(120,200,255,0.40);
+      box-shadow: 0 0 0 3px rgba(120,200,255,0.12);
+    }
+
+    .btn{
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform .05s ease, background .15s ease;
+    }
+    .btn:hover{ background: rgba(255,255,255,0.10); }
+    .btn:active{ transform: translateY(1px); }
+
+    .btnPrimary{
+      border-color: rgba(120,200,255,0.35);
+      background: rgba(120,200,255,0.12);
+    }
+    .btnPrimary:hover{ background: rgba(120,200,255,0.16); }
+
+    .btnDanger{
+      border-color: rgba(255,120,120,0.35);
+      background: rgba(255,120,120,0.10);
+    }
+    .btnDanger:hover{ background: rgba(255,120,120,0.14); }
+
+    .btnGroup{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btnGroup3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    .labelRow{
+      display:flex; align-items: baseline; justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .labelRow .label{ font-size: 13px; color: var(--muted); }
+    .labelRow .val{ font-size: 12px; color: var(--muted2); }
+
+    input[type="range"]{ width: 100%; }
+
+    .toggle{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      font-size: 13px; color: var(--muted);
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      user-select:none;
+    }
+    .switch{
+      width: 44px; height: 26px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      position: relative;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+    .knob{
+      position:absolute; top: 3px; left: 3px;
+      width: 20px; height: 20px; border-radius: 999px;
+      background: rgba(255,255,255,0.85);
+      transition: left .15s ease;
+    }
+    .switch.on{
+      background: rgba(120,200,255,0.16);
+      border-color: rgba(120,200,255,0.35);
+    }
+    .switch.on .knob{ left: 21px; }
+
+    .status{
+      margin-top: auto;
+      font-size: 12px;
+      color: var(--muted2);
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .chip{
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .stage{
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+    canvas{ width: 100%; height: 100%; display:block; cursor: crosshair; }
+
+    .toast{
+      position:absolute;
+      left: 14px; top: 14px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.10);
+      padding: 10px 12px;
+      border-radius: 12px;
+      color: rgba(255,255,255,0.85);
+      font-size: 12px;
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+      max-width: 420px;
+    }
+
+    @media (max-width: 900px){
+      .layout{ grid-template-columns: 1fr; }
+      .panel{ order: 2; }
+      .stage{ order: 1; height: 60vh; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="layout">
+    <aside class="panel">
+      <div class="appTitle">
+        <h1>Lettere in volo ✨</h1>
+        <div class="badge">Traiettoria fissa</div>
+      </div>
+
+      <div class="card help">
+        <div class="dot"></div>
+        <div>
+          1) Scrivi una parola e premi <b>Start</b><br/>
+          2) Trascina <b>Start</b> e <b>End</b> per scegliere la traiettoria<br/>
+          3) Regola velocità & pausa come ti pare
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="labelRow">
+          <div class="label">Parola</div>
+          <div class="val" id="lenInfo">0 caratteri</div>
+        </div>
+        <input id="word" class="input" type="text" placeholder="Es: ciao, camilla, robot..." value="ciao" />
+        <div style="height:10px"></div>
+        <div class="btnGroup3">
+          <button id="start" class="btn btnPrimary">▶ Start</button>
+          <button id="stop" class="btn">⏸ Pausa</button>
+          <button id="reset" class="btn btnDanger">↺ Reset</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="labelRow">
+          <div class="label">Velocità</div>
+          <div class="val" id="speedVal"></div>
+        </div>
+        <input id="speed" type="range" min="0.4" max="3" step="0.1" value="1.2" />
+
+        <div style="height:10px"></div>
+
+        <div class="labelRow">
+          <div class="label">Pausa tra lettere</div>
+          <div class="val"><span id="gapVal"></span> ms</div>
+        </div>
+        <input id="gap" type="range" min="0" max="1200" step="50" value="300" />
+      </div>
+
+      <div class="toggle" title="Mostra o nasconde la griglia di sfondo">
+        <span>Mostra griglia</span>
+        <div id="gridSwitch" class="switch on" role="switch" aria-checked="true">
+          <div class="knob"></div>
+        </div>
+      </div>
+
+      <div class="toggle" title="Mostra o nasconde la scia/linea della traiettoria">
+        <span>Mostra traiettoria</span>
+        <div id="trajSwitch" class="switch on" role="switch" aria-checked="true">
+          <div class="knob"></div>
+        </div>
+      </div>
+
+      <div class="status">
+        <div class="chip" id="statusChip">Stato: stopped</div>
+        <div class="chip" id="stepChip">Lettera: -</div>
+      </div>
+    </aside>
+
+    <main class="stage">
+      <div class="toast" id="toast">
+        Suggerimento: trascina i pallini <b>Start</b> / <b>End</b> per fissare la traiettoria.
+      </div>
+      <canvas id="c"></canvas>
+    </main>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+
+    const wordInput = document.getElementById("word");
+    const startBtn = document.getElementById("start");
+    const stopBtn = document.getElementById("stop");
+    const resetBtn = document.getElementById("reset");
+
+    const speedSlider = document.getElementById("speed");
+    const gapSlider = document.getElementById("gap");
+
+    const speedVal = document.getElementById("speedVal");
+    const gapVal = document.getElementById("gapVal");
+    const lenInfo = document.getElementById("lenInfo");
+
+    const statusChip = document.getElementById("statusChip");
+    const stepChip = document.getElementById("stepChip");
+
+    const toast = document.getElementById("toast");
+
+    const gridSwitch = document.getElementById("gridSwitch");
+    const trajSwitch = document.getElementById("trajSwitch");
+
+    let showGrid = true;
+    let showTrajectory = true;
+
+    function toggleSwitch(el, on) {
+      el.classList.toggle("on", on);
+      el.setAttribute("aria-checked", String(on));
+    }
+    function onSwitchClick(el, getter, setter) {
+      el.addEventListener("click", () => {
+        const next = !getter();
+        setter(next);
+        toggleSwitch(el, next);
+      });
+    }
+
+    onSwitchClick(gridSwitch, () => showGrid, (v) => showGrid = v);
+    onSwitchClick(trajSwitch, () => showTrajectory, (v) => showTrajectory = v);
+
+    function resize() {
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      canvas.width = Math.floor(canvas.clientWidth * dpr);
+      canvas.height = Math.floor(canvas.clientHeight * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3)/2;
+    }
+
+    // === TRAIETTORIA FISSA ===
+    let from = { x: 140, y: 180 }; // Start
+    let to   = { x: 640, y: 360 }; // End
+
+    // stato animazione
+    let running = false;
+    let currentIndex = 0;
+    let phase = "idle"; // move | gap | idle
+    let t = 0;
+    let gapTimer = 0;
+    let letter = "";
+
+    // lettere “arrivate”
+    const settled = []; // {ch, x, y}
+
+    function clampPoint(p){
+      // evita che esca dai bordi
+      const W = canvas.clientWidth, H = canvas.clientHeight;
+      const m = 24;
+      p.x = Math.max(m, Math.min(W - m, p.x));
+      p.y = Math.max(m, Math.min(H - m, p.y));
+      return p;
+    }
+
+    function pickNewLetter(word) {
+      letter = word[currentIndex];
+      t = 0;
+      phase = "move";
+    }
+
+    function drawBackground() {
+      const W = canvas.clientWidth;
+      const H = canvas.clientHeight;
+      ctx.clearRect(0, 0, W, H);
+
+      const g = ctx.createLinearGradient(0, 0, W, H);
+      g.addColorStop(0, "rgba(120,180,255,0.08)");
+      g.addColorStop(1, "rgba(255,120,220,0.05)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+
+      if (!showGrid) return;
+
+      ctx.strokeStyle = "rgba(255,255,255,0.06)";
+      ctx.lineWidth = 1;
+      const step = 60;
+      for (let x = 0; x < W; x += step) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let y = 0; y < H; y += step) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
+    }
+
+    function drawSettled() {
+      ctx.font = "46px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      for (const s of settled) ctx.fillText(s.ch, s.x, s.y);
+    }
+
+    function drawCurrentLetter(x, y, alpha = 1) {
+      ctx.font = "66px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      ctx.save();
+      ctx.globalAlpha = 0.95 * alpha;
+      ctx.shadowColor = "rgba(120,200,255,0.85)";
+      ctx.shadowBlur = 24;
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      ctx.fillText(letter, x, y);
+      ctx.restore();
+    }
+
+    function drawTrajectory() {
+      if (!showTrajectory) return;
+
+      // linea
+      ctx.save();
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = "rgba(255,255,255,0.55)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+      ctx.restore();
+
+      // dots
+      function dot(p, label) {
+        ctx.save();
+        ctx.fillStyle = "rgba(255,255,255,0.16)";
+        ctx.strokeStyle = "rgba(255,255,255,0.50)";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+        ctx.fillStyle = "rgba(255,255,255,0.82)";
+        ctx.font = "12px system-ui, sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(label, p.x + 12, p.y - 10);
+        ctx.restore();
+      }
+      dot(from, "Start");
+      dot(to, "End");
+    }
+
+    function updateUIStatus() {
+      const w = (wordInput.value || "").trim();
+      lenInfo.textContent = `${w.length} caratter${w.length === 1 ? "e" : "i"}`;
+
+      speedVal.textContent = `${speedSlider.value}x`;
+      gapVal.textContent = `${gapSlider.value}`;
+
+      statusChip.textContent = `Stato: ${running ? phase : "stopped"}`;
+      stepChip.textContent = w
+        ? `Lettera: ${Math.min(currentIndex + 1, w.length)}/${w.length}`
+        : "Lettera: -";
+    }
+
+    function render() {
+      drawBackground();
+      drawSettled();
+      drawTrajectory();
+
+      if (phase === "move") {
+        const e = easeInOutCubic(t);
+        const x = from.x + (to.x - from.x) * e;
+        const y = from.y + (to.y - from.y) * e;
+        drawCurrentLetter(x, y, 1);
+      }
+
+      updateUIStatus();
+    }
+
+    let lastTime = performance.now();
+    function loop(now) {
+      const dtMs = now - lastTime;
+      lastTime = now;
+
+      const word = (wordInput.value || "").trim();
+      const speed = parseFloat(speedSlider.value);
+      const gapMs = parseInt(gapSlider.value, 10);
+
+      if (running && word.length > 0) {
+        if (phase === "idle") {
+          if (currentIndex >= word.length) {
+            running = false;
+          } else {
+            pickNewLetter(word);
+          }
+        } else if (phase === "move") {
+          const durationMs = 900 / speed;
+          t += dtMs / durationMs;
+          if (t >= 1) {
+            t = 1;
+
+            // sfalso un po' le lettere arrivate (così non si sovrappongono tutte su End)
+            const dx = to.x - from.x, dy = to.y - from.y;
+            const len = Math.hypot(dx, dy) || 1;
+            const nx = -dy / len, ny = dx / len;
+
+            const spacing = 26;
+            const offset = (settled.length % 8) * spacing - 3.5 * spacing;
+
+            settled.push({ ch: letter, x: to.x + nx * offset, y: to.y + ny * offset });
+
+            currentIndex++;
+            phase = "gap";
+            gapTimer = gapMs;
+          }
+        } else if (phase === "gap") {
+          gapTimer -= dtMs;
+          if (gapTimer <= 0) phase = "idle";
+        }
+      }
+
+      render();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    function start() {
+      const word = (wordInput.value || "").trim();
+      if (!word) {
+        toast.innerHTML = "Scrivi una parola sopra 🙂";
+        setTimeout(() => toast.innerHTML = 'Suggerimento: trascina i pallini <b>Start</b> / <b>End</b> per fissare la traiettoria.', 1200);
+        return;
+      }
+      running = true;
+      if (phase === "idle" && currentIndex >= word.length) {
+        currentIndex = 0;
+        settled.length = 0;
+      }
+      toast.style.opacity = 0.0;
+      setTimeout(() => toast.style.display = "none", 200);
+    }
+
+    function stop() { running = false; }
+
+    function resetAll() {
+      running = false;
+      currentIndex = 0;
+      phase = "idle";
+      t = 0;
+      settled.length = 0;
+      toast.style.display = "block";
+      toast.style.opacity = 1;
+      toast.innerHTML = 'Suggerimento: trascina i pallini <b>Start</b> / <b>End</b> per fissare la traiettoria.';
+    }
+
+    startBtn.addEventListener("click", start);
+    stopBtn.addEventListener("click", stop);
+    resetBtn.addEventListener("click", resetAll);
+
+    wordInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") start();
+      if (e.key === "Escape") resetAll();
+    });
+
+    wordInput.addEventListener("input", () => {
+      // se cambia parola mentre sta andando, non “crasha”: aggiorna solo UI
+      updateUIStatus();
+    });
+
+    speedSlider.addEventListener("input", updateUIStatus);
+    gapSlider.addEventListener("input", updateUIStatus);
+
+    updateUIStatus();
+
+    // === DRAG start/end ===
+    let dragging = null; // "from" | "to" | null
+
+    function getMousePos(e) {
+      const r = canvas.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    }
+    function hit(p, m) { return Math.hypot(p.x - m.x, p.y - m.y) <= 14; }
+
+    canvas.addEventListener("mousedown", (e) => {
+      const m = getMousePos(e);
+      if (hit(from, m)) dragging = "from";
+      else if (hit(to, m)) dragging = "to";
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!dragging) return;
+      const m = getMousePos(e);
+      if (dragging === "from") from = clampPoint(m);
+      if (dragging === "to") to = clampPoint(m);
+    });
+
+    window.addEventListener("mouseup", () => dragging = null);
+  </script>
+</body>
+</html>
