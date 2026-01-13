@@ -336,8 +336,18 @@
       canvas.height = Math.floor(canvas.clientHeight * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
+
+    // lettere “arrivate”
+    const settled = []; // {ch, x, y}
+
+    // === Landing zone (riquadro centrale) ===
+    let box = { x: 0, y: 0, w: 520, h: 120 };
+    let activeWord = "";
+    let slots = []; // posizioni finali dentro il box (una per lettera)
+
     window.addEventListener("resize", resize);
     resize();
+    updateLandingBox();
 
     function easeInOutCubic(t) {
       return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3)/2;
@@ -355,8 +365,9 @@
     let gapTimer = 0;
     let letter = "";
 
-    // lettere “arrivate”
-    const settled = []; // {ch, x, y}
+    
+
+    
 
     function clampPoint(p){
       // evita che esca dai bordi
@@ -366,6 +377,95 @@
       p.y = Math.max(m, Math.min(H - m, p.y));
       return p;
     }
+
+    function updateLandingBox() {
+      // box centrato nella canvas
+      const W = canvas.clientWidth, H = canvas.clientHeight;
+      box.w = Math.min(560, Math.max(320, W * 0.55));
+      box.h = 140;
+      box.x = (W - box.w) * 0.5;
+      box.y = (H - box.h) * 0.25; // un po' più su del centro, tipo “zona titolo”
+      }   
+
+    function computeSlotsInBox(word) {
+      const n = word.length;
+      if (n === 0) return [];
+
+      // stile “testo” nel box
+      const fontSize = 56;           // come ti piace
+      const charSpacing = 44;        // spazio tra lettere
+      const lineGap = 64;            // distanza tra righe
+      const paddingX = 28;
+      const paddingY = 28;
+
+      // quante lettere per riga in base alla larghezza del box
+      const usableW = box.w - paddingX * 2;
+      const perLine = Math.max(1, Math.floor(usableW / charSpacing));
+
+      const out = [];
+
+      for (let i = 0; i < n; i++) {
+        const row = Math.floor(i / perLine);
+        const col = i % perLine;
+
+        const remaining = n - row * perLine;
+        const colsThisRow = Math.min(perLine, remaining);
+
+        // centra la riga
+        const rowWidth = (colsThisRow - 1) * charSpacing;
+        const startX = box.x + paddingX + (usableW - rowWidth) * 0.5;
+
+        const x = startX + col * charSpacing;
+        const y = box.y + paddingY + row * lineGap;
+
+        out.push({ x, y, fontSize });
+      }
+
+      return out;
+    }
+
+
+    function computeSlotsNearEnd(word) {
+      const n = word.length;
+      if (n === 0) return [];
+
+      // direzione traiettoria e normale
+      const dx = to.x - from.x, dy = to.y - from.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len, ny = dx / len; // normale (perpendicolare)
+
+      // impostazioni layout
+      const spacing = 38;         // distanza tra lettere
+      const lineGap = 44;         // distanza tra righe
+      const perLine = 10;         // quante lettere per riga (tweak)
+
+      // “ancora” leggermente spostata da End per lasciare spazio al pallino End
+      const anchorX = to.x + nx * 0;
+      const anchorY = to.y + ny * 0;
+
+      const out = [];
+      for (let i = 0; i < n; i++) {
+        const row = Math.floor(i / perLine);
+        const col = i % perLine;
+
+        // centra ogni riga
+        const colsInThisRow = Math.min(perLine, n - row * perLine);
+        const center = (colsInThisRow - 1) / 2;
+        const off = (col - center) * spacing;
+
+        // riga “scende” lungo la direzione della traiettoria (così non si sovrappone a End)
+        // uso -dx/len, -dy/len per andare “indietro” rispetto a End (puoi invertire se vuoi)
+        const ux = dx / len, uy = dy / len;
+        const back = row * lineGap;
+
+        out.push({
+          x: anchorX + nx * off - ux * back,
+          y: anchorY + ny * off - uy * back
+        });
+      }
+      return out;
+  }
+
 
     function pickNewLetter(word) {
       letter = word[currentIndex];
@@ -397,13 +497,17 @@
       }
     }
 
-    function drawSettled() {
-      ctx.font = "46px system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = "rgba(255,255,255,0.65)";
-      for (const s of settled) ctx.fillText(s.ch, s.x, s.y);
-    }
+      function drawSettled() {
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "rgba(255,255,255,0.70)";
+
+        for (const s of settled) {
+          ctx.font = `${s.fontSize || 46}px system-ui, sans-serif`;
+          ctx.fillText(s.ch, s.x, s.y);
+        }
+      }
+
 
     function drawCurrentLetter(x, y, alpha = 1) {
       ctx.font = "66px system-ui, sans-serif";
@@ -452,6 +556,39 @@
       dot(to, "End");
     }
 
+      function drawLandingBox() {
+        // box semitrasparente + bordo
+        ctx.save();
+        ctx.fillStyle = "rgba(255,255,255,0.04)";
+        ctx.strokeStyle = "rgba(255,255,255,0.14)";
+        ctx.lineWidth = 2;
+
+        const r = 16;
+        const x = box.x, y = box.y, w = box.w, h = box.h;
+
+        // rounded rect
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+
+        ctx.fill();
+        ctx.stroke();
+
+        // label
+        ctx.fillStyle = "rgba(255,255,255,0.55)";
+        ctx.font = "12px system-ui, sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText("Landing zone", x + 12, y + 10);
+
+        ctx.restore();
+      }
+
+
     function updateUIStatus() {
       const w = (wordInput.value || "").trim();
       lenInfo.textContent = `${w.length} caratter${w.length === 1 ? "e" : "i"}`;
@@ -467,6 +604,7 @@
 
     function render() {
       drawBackground();
+      drawLandingBox();   // <— aggiungi questa
       drawSettled();
       drawTrajectory();
 
@@ -502,19 +640,16 @@
           if (t >= 1) {
             t = 1;
 
-            // sfalso un po' le lettere arrivate (così non si sovrappongono tutte su End)
-            const dx = to.x - from.x, dy = to.y - from.y;
-            const len = Math.hypot(dx, dy) || 1;
-            const nx = -dy / len, ny = dx / len;
+            // posizionamento ordinato nello slot i-esimo
+            const i = currentIndex;
+            const p = slots[i] || { x: box.x + box.w/2, y: box.y + box.h/2, fontSize: 56 };
 
-            const spacing = 26;
-            const offset = (settled.length % 8) * spacing - 3.5 * spacing;
-
-            settled.push({ ch: letter, x: to.x + nx * offset, y: to.y + ny * offset });
+            settled.push({ ch: letter, x: p.x, y: p.y, fontSize: p.fontSize });
 
             currentIndex++;
             phase = "gap";
             gapTimer = gapMs;
+
           }
         } else if (phase === "gap") {
           gapTimer -= dtMs;
@@ -534,14 +669,24 @@
         setTimeout(() => toast.innerHTML = 'Suggerimento: trascina i pallini <b>Start</b> / <b>End</b> per fissare la traiettoria.', 1200);
         return;
       }
+
+      // congela e prepara layout ordinato
+      activeWord = word;
+      slots = computeSlotsNearEnd(activeWord);
+
+     
+      updateLandingBox();
+     
       running = true;
-      if (phase === "idle" && currentIndex >= word.length) {
-        currentIndex = 0;
-        settled.length = 0;
-      }
+      currentIndex = 0;
+      settled.length = 0;
+      phase = "idle";
+      t = 0;
+
       toast.style.opacity = 0.0;
       setTimeout(() => toast.style.display = "none", 200);
     }
+
 
     function stop() { running = false; }
 
@@ -550,11 +695,21 @@
       currentIndex = 0;
       phase = "idle";
       t = 0;
+      gapTimer = 0;
+
+      // svuota lettere già arrivate
       settled.length = 0;
+
+      // reset landing box state
+      activeWord = "";
+      slots = [];
+
       toast.style.display = "block";
       toast.style.opacity = 1;
-      toast.innerHTML = 'Suggerimento: trascina i pallini <b>Start</b> / <b>End</b> per fissare la traiettoria.';
+      toast.innerHTML =
+        'Suggerimento: trascina i pallini <b>Start</b> / <b>End</b> per fissare la traiettoria.';
     }
+
 
     startBtn.addEventListener("click", start);
     stopBtn.addEventListener("click", stop);
@@ -595,6 +750,13 @@
       const m = getMousePos(e);
       if (dragging === "from") from = clampPoint(m);
       if (dragging === "to") to = clampPoint(m);
+      if (activeWord) {
+        slots = computeSlotsNearEnd(activeWord);
+        for (let i = 0; i < settled.length; i++) {
+          if (slots[i]) { settled[i].x = slots[i].x; settled[i].y = slots[i].y; }
+        }
+      }
+
     });
 
     window.addEventListener("mouseup", () => dragging = null);
